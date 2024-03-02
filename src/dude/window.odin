@@ -58,7 +58,7 @@ window_get_basic_template :: proc(name: string, size : Vec2i = Vec2i{800, 600}, 
 
 	wnd.is_opengl_window = is_opengl_window
 	if is_opengl_window {
-		wnd.window_flags |= {.OPENGL }
+		wnd.window_flags |= { .OPENGL, .ALWAYS_ON_TOP, .BORDERLESS, .RESIZABLE }
 	} 
 	wnd.position = sdl.WINDOWPOS_CENTERED
 	wnd.size = size

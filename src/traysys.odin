@@ -26,7 +26,7 @@ systray_init :: proc() {
     sdl.GetVersion(&wm_info.version)
     sdl.GetWindowWMInfo(wnd, &wm_info)
     
-    hwnd := wm_info.info.win.window
+    hwnd := cast(win32.HWND)wm_info.info.win.window
     hinstance := wm_info.info.win.hinstance
 
     // Set up the taskbar icon
@@ -52,6 +52,8 @@ systray_init :: proc() {
     win32.AppendMenuW(menu, win32.MF_STRING, 2, raw_data(option2));
     
     dude.wnd_handler = systray_handler
+
+    win32.ShowWindow(hwnd, win32.SW_HIDE)
 }
 
 systray_release :: proc() {
@@ -61,7 +63,7 @@ systray_release :: proc() {
 systray_handler :: proc(wnd:^dude.Window, event:sdl.Event) {
     if event.type == .SYSWMEVENT {
         msg := event.syswm.msg.msg.win
-        wm_info : sdl.SysWMinfo// SDL_SysWMinfo;
+        wm_info : sdl.SysWMinfo
         wnd := dude.game.window.window
         sdl.GetVersion(&wm_info.version)
         sdl.GetWindowWMInfo(wnd, &wm_info)
@@ -73,7 +75,17 @@ systray_handler :: proc(wnd:^dude.Window, event:sdl.Event) {
                 win32.SendMessageW(hwnd, win32.WM_CLOSE, 0, 0)
             } else if msg.lParam == win32.WM_LBUTTONUP {
                 visible := (transmute(u32)win32.GetWindowLongW(hwnd, win32.GWL_STYLE) & win32.WS_VISIBLE) != 0
+                if !visible {
+                    pt : win32.POINT
+                    w, h :i32= 200, 600
+                    win32.GetCursorPos(&pt)
+                    win32.SetWindowPos(hwnd, win32.HWND_TOPMOST, pt.x-w, pt.y-h-30, 360, 600, win32.SWP_FRAMECHANGED)
+                }
                 win32.ShowWindow(hwnd, win32.SW_HIDE if visible else win32.SW_SHOW)
+                if !visible {
+                    // win32.SetForegroundWindow(hwnd)
+                    win32.SetActiveWindow(hwnd)
+                }
             }
         }
     }
