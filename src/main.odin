@@ -41,7 +41,7 @@ DemoGame :: struct {
 demo_game : DemoGame
 
 main :: proc() {
-    dude.native_wnd_msg_handler = native_wnd_msg_handler
+    // dude.native_wnd_msg_handler = native_wnd_msg_handler
     dude.init("dude game demo", {_package_game, _test})
     dude.dude_main(update, init, release, on_gui)
 }

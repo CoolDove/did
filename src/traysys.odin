@@ -10,19 +10,21 @@ import "core:c"
 import "core:log"
 import "core:mem"
 
-import "vendor:sdl2"
+import sdl "vendor:sdl2"
 
 import "dude"
 
 nid : win32.NOTIFYICONDATAW
 menu : win32.HMENU
 
+CWM_SYSTRAY :: win32.WM_USER+6
+
 systray_init :: proc() {
     // Get the window handle
-    wm_info : sdl2.SysWMinfo// SDL_SysWMinfo;
+    wm_info : sdl.SysWMinfo// SDL_SysWMinfo;
     wnd := dude.game.window.window
-    sdl2.GetVersion(&wm_info.version)
-    sdl2.GetWindowWMInfo(wnd, &wm_info)
+    sdl.GetVersion(&wm_info.version)
+    sdl.GetWindowWMInfo(wnd, &wm_info)
     
     hwnd := wm_info.info.win.window
     hinstance := wm_info.info.win.hinstance
@@ -31,6 +33,7 @@ systray_init :: proc() {
     nid.cbSize = size_of(win32.NOTIFYICONDATAW)
     nid.hWnd = transmute(win32.HWND)hwnd
     nid.uFlags = win32.NIF_ICON | win32.NIF_TIP | win32.NIF_MESSAGE | win32.NIF_INFO
+    nid.uCallbackMessage = CWM_SYSTRAY
     nid.uID = 1  // Unique ID for the icon
     
     iconw := win32.utf8_to_utf16("APP_ICON")
@@ -48,44 +51,30 @@ systray_init :: proc() {
     win32.AppendMenuW(menu, win32.MF_STRING, 1, raw_data(option1));
     win32.AppendMenuW(menu, win32.MF_STRING, 2, raw_data(option2));
     
+    dude.app.window.handler = systray_handler
 }
 
 systray_release :: proc() {
     win32.Shell_NotifyIconW(win32.NIM_DELETE, &nid);
 }
 
-native_wnd_msg_handler :: proc "c" (userdata: rawptr, hWnd: rawptr, message: c.uint, wParam: u64, lParam: i64) {
-	context = runtime.default_context()
-    log.debugf("message")
-    switch message {
-    case win32.WM_NOTIFY:
-        log.debugf("notify")
-        // 处理任务栏图标的消息
-        switch lParam {
-            // case WM_LBUTTONUP:
-                // // MessageBox(hWnd, TEXT("任务栏图标被左键点击"), TEXT("提示"), MB_ICONINFORMATION);
-                // break;
-            case win32.WM_RBUTTONUP: 
-                wm_info : sdl2.SysWMinfo// SDL_SysWMinfo;
-                wnd := dude.game.window.window
-                sdl2.GetVersion(&wm_info.version)
-                sdl2.GetWindowWMInfo(wnd, &wm_info)
-
-                hwnd :win32.HWND= auto_cast wm_info.info.win.window
-            
-                pt : win32.POINT
-                win32.GetCursorPos(&pt)
-
-                win32.SetForegroundWindow(hwnd)
-                win32.TrackPopupMenu(menu, win32.TPM_RIGHTBUTTON, auto_cast pt.x, auto_cast pt.y, 0, hwnd, nil)
-                // win32.PostMessage(hwnd, WM_NULL, 0, 0); // 发送一个空消息，以关闭弹出的菜单
-                // win32.DestroyMenu(menu)
-                break;
-            
+systray_handler :: proc(wnd:^dude.Window, event:sdl.Event) {
+    if event.type == .SYSWMEVENT {
+        msg := event.syswm.msg.msg.win
+        wm_info : sdl.SysWMinfo// SDL_SysWMinfo;
+        wnd := dude.game.window.window
+        sdl.GetVersion(&wm_info.version)
+        sdl.GetWindowWMInfo(wnd, &wm_info)
+        
+        hwnd := cast(win32.HWND)wm_info.info.win.window
+        hinstance := wm_info.info.win.hinstance
+        if msg.msg == CWM_SYSTRAY {
+            // log.debugf("SYSTRAY MSG: {}", msg.lParam)
+            if msg.lParam == win32.WM_RBUTTONDOWN {
+                win32.ShowWindow(hwnd, win32.SW_HIDE)
+            } else if msg.lParam == win32.WM_LBUTTONDOWN {
+                win32.ShowWindow(hwnd, win32.SW_SHOW)
+            }
         }
-
     }
-
-    
-    
 }
