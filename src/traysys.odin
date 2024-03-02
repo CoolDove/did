@@ -51,7 +51,7 @@ systray_init :: proc() {
     win32.AppendMenuW(menu, win32.MF_STRING, 1, raw_data(option1));
     win32.AppendMenuW(menu, win32.MF_STRING, 2, raw_data(option2));
     
-    dude.app.window.handler = systray_handler
+    dude.wnd_handler = systray_handler
 }
 
 systray_release :: proc() {
@@ -69,11 +69,11 @@ systray_handler :: proc(wnd:^dude.Window, event:sdl.Event) {
         hwnd := cast(win32.HWND)wm_info.info.win.window
         hinstance := wm_info.info.win.hinstance
         if msg.msg == CWM_SYSTRAY {
-            // log.debugf("SYSTRAY MSG: {}", msg.lParam)
-            if msg.lParam == win32.WM_RBUTTONDOWN {
-                win32.ShowWindow(hwnd, win32.SW_HIDE)
-            } else if msg.lParam == win32.WM_LBUTTONDOWN {
-                win32.ShowWindow(hwnd, win32.SW_SHOW)
+            if msg.lParam == win32.WM_RBUTTONUP {
+                win32.SendMessageW(hwnd, win32.WM_CLOSE, 0, 0)
+            } else if msg.lParam == win32.WM_LBUTTONUP {
+                visible := (transmute(u32)win32.GetWindowLongW(hwnd, win32.GWL_STYLE) & win32.WS_VISIBLE) != 0
+                win32.ShowWindow(hwnd, win32.SW_HIDE if visible else win32.SW_SHOW)
             }
         }
     }
