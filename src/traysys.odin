@@ -79,11 +79,13 @@ systray_handler :: proc(wnd:^dude.Window, event:sdl.Event) {
                     pt : win32.POINT
                     w, h :i32= 200, 600
                     win32.GetCursorPos(&pt)
-                    win32.SetWindowPos(hwnd, win32.HWND_TOPMOST, pt.x-w, pt.y-h-30, 360, 600, win32.SWP_FRAMECHANGED)
+                    style := cast(u32)win32.GetWindowLongPtrW(hwnd, win32.GWL_STYLE)
+                    win32.SetWindowLongPtrW(hwnd, win32.GWL_STYLE, auto_cast (style & (~transmute(u32)win32.WS_CAPTION)))
+                    win32.SetWindowPos(hwnd, win32.HWND_TOPMOST, pt.x-w, pt.y-h-30, 360, 600, win32.SWP_FRAMECHANGED | win32.SWP_SHOWWINDOW)
                 }
                 win32.ShowWindow(hwnd, win32.SW_HIDE if visible else win32.SW_SHOW)
                 if !visible {
-                    // win32.SetForegroundWindow(hwnd)
+                    win32.SetForegroundWindow(hwnd)
                     win32.SetActiveWindow(hwnd)
                 }
             }
